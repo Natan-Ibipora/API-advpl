@@ -17,7 +17,7 @@ WSRESTFUL zWPROD Description "Exemplo de Rest"
     WSMETHOD DELETE DESCRIPTION "Deleta uma tupla por id"   WSSYNTAX "zWPROD/" PATH "/zWPROD/{id}" PATH "/zWPROD/{id}"
 
 END WSRESTFUL
-//http://192.168.246.12:8097/rest/zWPROD
+
 //Pega todos os registros da tabela ZZ6;
 WSMETHOD GET  WSSERVICE zWPROD
     Local lPost := .T.   
