@@ -2,7 +2,7 @@
 #INCLUDE "RESTFUL.CH"
 #INCLUDE "FWMVCDEF.CH"
 /*
-    Este fonte usa a tabeçaz ZZ6 para realizar um CRUD.
+    Este fonte usa a tabela ZZ6 para realizar um CRUD.
 */
 
 WSRESTFUL zWPROD Description "Exemplo de Rest"
