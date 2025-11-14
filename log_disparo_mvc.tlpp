@@ -1,0 +1,137 @@
+//Bibliotecas
+#Include "tlpp-core.th"
+#Include "FWMVCDef.ch"
+#Include "totvs.ch"
+ 
+//Declaração da namespace
+Namespace custom.log_disparo_email
+ 
+//Variveis Estaticas
+Static cTitulo := "Logs dos emails disparados" as character
+Static cAliasMVC := "Z03" as character
+ 
+/*
+fonte feito para questão de estudos
+    ----------------------------------------------------------------------------
+| Programa  | mvc_log_emails| Autor | Natan  | Data | 05/11/2025           |
+----------------------------------------------------------------------------
+| Descricao | Rotina MVC dos logs de envio de email       FONTE TREINO     |
+|           |                                                              |
+----------------------------------------------------------------------------
+| Uso       | Disponivel para consultar os logs de email disparados        |
+|           | é possível disparar o email novamente e gerar html           |
+*/
+User Function mvc_log_emails()
+    Local aArea   := FWGetArea() as object
+    Local oBrowse as object 
+    Private aRotina := {} AS array
+ 
+    //Definicao do menu
+    aRotina := custom.log_disparo_email.u_MenuDef()
+ 
+    //Instanciando o browse
+    oBrowse := FWMBrowse():New()
+    oBrowse:SetAlias(cAliasMVC)
+    oBrowse:SetDescription(cTitulo)
+    oBrowse:DisableDetails()
+    
+    //Ativa a Browse
+    oBrowse:Activate()
+ 
+    FWRestArea(aArea)
+Return Nil
+
+ 
+User Function MenuDef()
+    Local aRotina := {} as array 
+ 
+    //Adicionando opcoes do menu
+    ADD OPTION aRotina TITLE "Visualizar" ACTION "ViewDef.custom.log_disparo_email.mvc_log_emails" OPERATION 1 ACCESS 0
+   // ADD OPTION aRotina TITLE "Incluir" ACTION    "ViewDef.custom.log_disparo_email.mvc_log_emails" OPERATION 3 ACCESS 0
+    ADD OPTION aRotina TITLE "Alterar" ACTION    "ViewDef.custom.log_disparo_email.mvc_log_emails" OPERATION 4 ACCESS 0
+    ADD OPTION aRotina TITLE "Excluir" ACTION    "ViewDef.custom.log_disparo_email.mvc_log_emails" OPERATION 5 ACCESS 0
+   // ADD OPTION aRotina TITLE "Copiar" ACTION   "ViewDef.custom.log_disparo_email.mvc_log_emails" OPERATION 9 ACCESS 0
+    ADD OPTION aRotina TITLE 'Gerar HTML'   ACTION 'custom.log_disparo_email.U_HTML()'    OPERATION 9 ACCESS 0
+    ADD OPTION aRotina TITLE 'Disparar Email'  ACTION 'custom.log_disparo_email.U_disparar_email()'    OPERATION 9 ACCESS 0
+Return aRotina
+ 
+
+User Function ModelDef()
+    Local oStruct := FWFormStruct(1, cAliasMVC) as object 
+    Local oModel as object
+    Local bPre := Nil as codeblock
+    Local bPos := Nil as codeblock
+    Local bCancel := Nil as codeblock
+ 
+ 
+    //Cria o modelo de dados para cadastro
+    oModel := MPFormModel():New("mvc_log_emails_model", bPre, bPos, /*bCommit*/, bCancel)
+
+    oStruct:SetProperty('Z03_ID',  MODEL_FIELD_WHEN, {|| oModel:getOperation() == 3})    
+
+    oModel:AddFields("Z03_MASTER", /*cOwner*/, oStruct)
+    oModel:SetDescription("Modelo de dados - " + cTitulo)
+    oModel:GetModel("Z03_MASTER"):SetDescription( "Dados de - " + cTitulo)
+    oModel:SetPrimaryKey({})
+Return oModel
+ 
+User Function ViewDef()
+    Local oModel := FWLoadModel("custom.log_disparo_email.mvc_log_emails") as object
+    Local oStruct := FWFormStruct(2, cAliasMVC) as object
+    Local oView as object
+ 
+    //Cria a visualizacao do cadastro
+    oView := FWFormView():New()
+    oView:SetModel(oModel)
+    oView:AddField("VIEW_Z03", oStruct, "Z03_MASTER")
+    oView:CreateHorizontalBox("TELA" , 100 )
+    oView:SetOwnerView("VIEW_Z03", "TELA")
+ 
+Return oView
+
+User Function disparar_email()
+   // Local cDe := GetMV("MV_UEMREME") as character
+    Local cDe := 'usuario@teste.com' as character
+    Local cAssunto := Z03->Z03_ASSUNT as character
+    Local cTexto   := Z03->Z03_TEXTO  as character
+  //  Local cPara    := Z03->Z03_PARA   as character
+    Local cPara    := 'usuario@teste.com'   as character
+
+    IF msgyesno("Deseja disparar o email novamente ?")
+       // U_EnviarEMail(cDe,cPara,cAssunto,ctexto)
+    ENDIF
+Return 
+/*
+    Autor: Natan
+    Data: 05/11/2025
+    Descrição: Função para gerar o html que seria enviado via email.
+/*/
+
+Static Function gerar_html (cPasta, cArquivo)
+    
+    Local cConteudo  as character
+
+    cConteudo := Z03_TEXTO
+    MemoWrite(cPasta + cArquivo,cConteudo)
+
+Return 
+
+/*
+    Autor: Natan
+    Data: 05/11/2025
+    Descrição: Executa o arquivo html
+/*/
+User Function HTML()
+ 
+    Local cPasta      := "C:\TEMP\"
+    Local cArquivo    := "log_email.html"
+
+    gerar_html(cPasta, cArquivo)
+
+    nRet := ShellExecute("open", cArquivo, "", cPasta, 1)
+     
+    //Se houver algum erro
+    If nRet <= 32
+        MsgStop("Não foi possível abrir o arquivo " +cPasta+cArquivo+ "!", "Atenção")
+    EndIf 
+Return
