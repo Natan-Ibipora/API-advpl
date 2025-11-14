@@ -1,0 +1,9 @@
+#include 'tlpp-core.th'
+#include 'tlpp-rest.th'
+
+@Get("/meuPrimeiroRestTLPP")
+
+Function u_zApitreinamento01()
+  Local cReturn := "Meu primeiro REST em TL++ " as character
+  oRest:setResponse(cReturn)
+Return .T.

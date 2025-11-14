@@ -1,0 +1,35 @@
+#include 'totvs.ch'
+#include 'tlpp-core.th'
+#INCLUDE "TBICONN.CH"
+
+User Function post_contas_pagar ()
+    PREPARE ENVIRONMENT EMPRESA "01" FILIAL "01" 
+    //Prepara o array para o execauto
+    aVetSE2 := {}
+    aAdd(aVetSE2, {"E2_FILIAL",  FWxFilial("SE2"),  Nil})
+    aAdd(aVetSE2, {"E2_NUM",     'AAAAAAAAA',       Nil})  
+    aAdd(aVetSE2, {"E2_TIPO",    '131',             Nil})
+    aAdd(aVetSE2, {"E2_NATUREZ", '10',              Nil})
+    aAdd(aVetSE2, {"E2_FORNECE", '000007',          Nil})
+    aAdd(aVetSE2, {"E2_LOJA",    '001',             Nil})
+    aAdd(aVetSE2, {"E2_EMISSAO",  cTod('03/11/2025'),     Nil})
+    aAdd(aVetSE2, {"E2_VENCTO", cTod('15/11/2025'),     Nil})
+    aAdd(aVetSE2, {"E2_VENCREA",  cTod('17/11/2025'),     Nil})
+    aAdd(aVetSE2, {"E2_VALOR",      1,         Nil})
+    aAdd(aVetSE2, {"E2_VLCRUZ",      1,            Nil})
+   
+    
+    //Inicia o controle de transação
+    Begin Transaction
+        //Chama a rotina automática
+        lMsErroAuto := .F.
+        MSExecAuto({|x,y| FINA050(x,y)}, aVetSE2, 3)
+        
+        //Se houve erro, mostra o erro ao usuário e desarma a transação
+        If lMsErroAuto
+            MostraErro()
+            DisarmTransaction()
+        EndIf
+    //Finaliza a transação
+    End Transaction
+Return 

@@ -1,0 +1,56 @@
+#include 'totvs.ch'
+#include 'tlpp-core.th'
+#include "topconn.ch"
+
+Namespace desenvolvimento.api
+
+@get(endpoint='/api/fornecedores/:paginaAtual', description='API para retorno de fornecedores')  
+User Function consultar_fornecedor()
+   
+   Local cRetorno   AS character
+   Local lRet        := .T. AS logical
+   Local jPath       AS json
+   Local nPaginaAtual AS  numeric
+   Local cQuery   AS  character
+   Local cAlias   AS character
+
+   jPath := oRest:getPathParamsRequest()  
+   nPaginaAtual:= GetDtoVal(jPath['paginaAtual'])
+   
+    //oRest:setFault( '{"mensagem":"Parametro invalido "}' )  // para retorno com erro
+    //setando erros
+    //setStatusCode(400)  // s
+    //cReturn :={"mensagem","erro"}
+   //cRetorno    := "{'mensagem':'Pagina atual informada com sucesso':" +cValToChar(nPaginaAtual) +" }"
+
+   cQuery := " SELECT  "
+   cQuery += "   A2_COD, A2_LOJA, A2_NREDUZ "
+   cQuery += " FROM " + RetSQLNAME("SA2") + " AS SA2 "
+   cQuery += " WHERE"
+   cQuery += "   SA2.D_E_L_E_T_=' ' "
+   cQuery += " ORDER BY A2_COD, A2_LOJA "
+   cQuery += " OFFSET " +  cValToChar(nPaginaAtual * 10) +" ROWS FETCH NEXT 10  ROWS ONLY "
+   // lembrar que as paginas devem ser igual a indices, 0 (pagina atual) pega os 10 primeiros, 1 pega de 10 até 20 e assim por diante
+   cAlias := GetNextAlias()
+   conout("antes do changequery")
+   cQuery:= ChangeQuery(cQuery)
+   conout("depois do changequery")
+   conout(cQuery)
+   
+ 
+   
+   MPSysOpenQuery(cQuery,cAlias)
+
+   WHILE !(cAlias)->(EOF())
+        cRetorno += " {"      
+            cRetorno += "'codigo':" + (cAlias)->A2_COD
+            cRetorno += "'loja':"   + (cAlias)->A2_LOJA
+            cRetorno += "'nome':"   + (cAlias)->A2_NREDUZ
+        cRetorno +=" },"
+        (cAlias)->(dbSkip())
+   ENDDO 
+   (cAlias)->(DbCloseArea())
+   conout("retorno")
+   conout(cRetorno)
+   oRest:setResponse("{'mensagem':'consegui retornar com sucesso !!!'}")
+Return lRet

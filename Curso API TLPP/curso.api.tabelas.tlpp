@@ -1,0 +1,246 @@
+#include 'totvs.ch'
+#include 'tlpp-core.th'
+
+namespace curso.api.fornecedores
+//tlpp.environment.getIncludeTLPP
+@get('/curso/api/tabelas/:tabela')
+
+/*/{Protheus.doc} U_GET
+    Funcao para recuperar dados por requisicao GET
+    @type  Function
+    @author Klaus Wolfgram
+    /*/
+Function U_GETTABELA(cTab) as logical
+
+    Local lret          := .T. as logical
+    Local lRPC          := .F. as logical
+    Local jPath         := nil as json 
+    Local jQuery        := nil as json
+    Local bLastError    := errorblock({|e| err: e, break(err)}) as codeblock
+    Local cMsgErr       := '' as character
+    Local cTabela       := '' as character
+
+    Private err         := errorClass():new()
+    Private jHeaderRes  := nil as json
+    Private jResult     := nil as json
+    Private cFilter     := '' as character
+
+    jResult             := jsonObject():new()
+    jHeaderRes          := jsonObject():new()
+    jHeaderRes['Content-Type'] := 'application/json'     
+
+    IF type('cEmpAnt') <> 'C'
+        rpcSetType(3)
+        rpcSetEnv('99','01')
+        lRPC        := .T.
+    EndIF
+
+    BEGIN SEQUENCE
+
+        IF empty(cTab)
+
+            jPath   := oRest:getPathParamsRequest()
+            jQuery  := oRest:getQueryRequest()
+            
+            cTabela := upper(jPath['tabela'])
+            
+            cFilter := if(!empty(jQuery['filter']),upper(jQuery['filter']),'')
+
+        Else
+
+            cTabela := upper(cTab)  
+
+        EndIF    
+
+        DO CASE 
+
+            CASE cTabela == 'SA1'
+                cResult := fnGetSA1()
+
+            CASE cTabela == 'SB1'
+                cResult := fnGetSB1()
+
+            CASE cTabela == 'SCJ'
+                cResult := fnGetSCJ()
+
+            OTHERWISE
+
+                err:description := 'Tabela ' + cTabela + ' indisponível para esta consulta!!'
+                break(err)
+
+        END CASE
+
+        IF !lret
+            break(err)
+        EndIF
+
+        oRest:setResponse(cResult)
+
+    RECOVER
+
+        IF !empty(err:description)
+            
+            cMsgErr := err:description + CRLF + err:errorstack + CRLF + err:errorenv
+            
+            IF empty(cTab)
+                oRest:setFault(cMsgErr)
+            EndIF 
+
+        EndIF
+
+        lret        := .F.
+
+    END SEQUENCE
+
+    IF lRPC
+        rpcClearEnv()
+    EndIF          
+    
+Return lret
+
+/*/{Protheus.doc} fnGetSA1
+    Consulta tabela de clientes
+    @type  Static Function
+    /*/
+Static Function fnGetSA1(cCod as character) as character
+
+    Local cResult   := ''   as character
+    Local cQuery    := ''   as character
+    Local cWhere    := ''   as character
+    Local cCodigo   := ''   as character
+    Local cLoja     := ''   as character
+    Local cSearch   := ''   as character
+    Local cOrder    := ''   as character
+    Local nPage     := 1    as variant
+    Local nPageSize := 9999 as variant
+    Local oQuery    := nil  as object
+
+    oQuery          := fwAdapterBaseV2():new('GET',.T.)
+    
+    oQuery:addMapFields('codigo'    ,'A1_COD'   ,.T.,.T.)
+    oQuery:addMapFields('loja'      ,'A1_LOJA'  ,.T.,.T.)
+    oQuery:addMapFields('nome'      ,'A1_NOME'  ,.T.,.T.)
+    oQuery:addMapFields('email'     ,'A1_EMAIL' ,.T.,.T.)
+    oQuery:addMapFields('endereco'  ,'A1_END'   ,.T.,.T.)
+    oQuery:addMapFields('telefone'  ,'A1_TEL'   ,.T.,.T.)
+    oQuery:addMapFields('status'    ,'A1_MSBLQL',.T.,.T.)
+
+    cQuery := "SELECT #QueryFields# FROM " + retSQLName("SA1") + " SA1 WHERE #QueryWhere#"
+    cWhere := "SA1.D_E_L_E_T_ = ' ' "
+
+    IF !empty(cFilter)
+        cWhere += "AND A1_NOME LIKE '%" + alltrim(cFilter) + "%' "
+    EndIF     
+
+    IF type('oRest') == 'J'
+        
+        jQuery      := oRest:getQueryRequest()
+        cCodigo     := jQuery['codigo'  ]
+        cLoja       := jQuery['loja'    ] 
+        cSearch     := jQuery['search'  ]
+        cOrder      := jQuery['order'   ]
+        nPage       := jQuery['page'    ] ; nPage       := val(nPage    )
+        nPageSize   := jQuery['pageSize'] ; nPageSize   := val(nPageSize)
+
+    EndIF
+
+    IF empty(cOrder)
+        cOrder  := 'A1_COD,A1_LOJA'
+    EndIF
+
+    IF empty(nPage)
+        nPage   := 1
+    EndIF
+
+    IF empty(nPageSize)
+        nPageSize := 10
+    EndIF        
+    
+    oQuery:setQuery(cQuery)
+    oQuery:setWhere(cWhere)
+    oQuery:setOrder(cOrder)
+    oQuery:setPageSize(nPageSize)
+    oQuery:setPage(nPage)
+
+    IF oQuery:execute()
+        oQuery:fillGetResponse()
+        cResult := oQuery:getJsonResponse()
+    EndIF    
+    
+Return cResult
+
+/*/{Protheus.doc} fnGetSB1 
+    Consulta tabela de produtos
+    @type  Static Function
+    /*/
+Static Function fnGetSB1(cCod as character) as character
+
+    Local cResult   := ''   as character
+    Local cQuery    := ''   as character
+    Local cWhere    := ''   as character
+    Local cCodigo   := ''   as character
+    Local cSearch   := ''   as character
+    Local cOrder    := ''   as character
+    Local nPage     := 1    as variant
+    Local nPageSize := 9999 as variant
+    Local oQuery    := nil  as object
+
+    oQuery          := fwAdapterBaseV2():new('GET',.T.)
+    
+    oQuery:addMapFields('codigo'    ,'B1_COD'       ,.T.,.T.)
+    oQuery:addMapFields('nome'      ,'B1_DESC'      ,.T.,.T.)
+    oQuery:addMapFields('categoria' ,'BM_DESC'      ,.T.,.T.)
+    oQuery:addMapFields('um'        ,'B1_UM'        ,.T.,.T.)
+    oQuery:addMapFields('preco'     ,'B1_PRV1'      ,.T.,.T.)
+    oQuery:addMapFields('status'    ,'B1_MSBLQL'    ,.T.,.T.)
+
+    cQuery := "SELECT #QueryFields# FROM " + retSQLName("SB1") + " SB1 "
+    cQuery += "JOIN " + retSQLName("SBM") + " SBM ON SBM.D_E_L_E_T_ = ' ' AND BM_GRUPO = B1_GRUPO "
+    cQuery += "WHERE #QueryWhere# "
+    cWhere := "SB1.D_E_L_E_T_ = ' ' AND B1_TIPO IN ('PA','ME')"
+
+    IF type('oRest') == 'J'
+        
+        jQuery      := oRest:getQueryRequest()
+        cCodigo     := jQuery['codigo'  ]
+        cSearch     := jQuery['search'  ]
+        cOrder      := jQuery['order'   ]
+        nPage       := jQuery['page'    ] ; nPage       := val(nPage    )
+        nPageSize   := jQuery['pageSize'] ; nPageSize   := val(nPageSize)
+
+    EndIF
+
+    IF empty(cOrder)
+        cOrder  := 'BM_DESC,B1_COD'
+    EndIF
+
+    IF empty(nPage)
+        nPage   := 1
+    EndIF
+
+    IF empty(nPageSize)
+        nPageSize := 10
+    EndIF        
+    
+    oQuery:setQuery(cQuery)
+    oQuery:setWhere(cWhere)
+    oQuery:setOrder(cOrder)
+    oQuery:setPageSize(nPageSize)
+    oQuery:setPage(nPage)
+
+    IF oQuery:execute()
+        oQuery:fillGetResponse()
+        cResult := oQuery:getJsonResponse()
+    EndIF       
+    
+Return cResult
+
+/*/{Protheus.doc} fnGetSCJ
+    Consulta orcamentos
+    @type  Static Function
+    /*/
+Static Function fnGetSCJ() as character
+
+    Local cResult := '' as character
+    
+Return cResult

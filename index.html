@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enviar Dados para API</title>
+</head>
+<body>
+
+    <form id="meuFormulario">
+      <label for="usuario">Usuário:</label>
+      <input type="text" name="usuario" id="usuario" required>
+      <br>
+      <label for="senha">Senha:</label>
+      <input type="password" name="senha" id="senha" required>
+      <br>
+      <label for="nome">Nome:</label>
+      <input type="text" name="nome" id="nome" required>
+      <br>
+      <label for="preco">Preço:</label>
+      <input type="text" name="preco" id="preco" required>
+      <br>
+      <input type="submit" value="Enviar">
+    </form>
+
+    <script>
+      document.getElementById('meuFormulario').addEventListener('submit', function(event) {
+        event.preventDefault(); // Previne o envio padrão do formulário
+
+        const usuario = document.getElementById('usuario').value;
+        const senha = document.getElementById('senha').value;
+        const nome = document.getElementById('nome').value;
+        const preco = document.getElementById('preco').value;
+
+        const data = {
+          nome: nome,
+          preco: preco
+        };
+
+        // Cria a string de autenticação básica
+        const credentials = btoa(`${usuario}:${senha}`);
+
+        fetch('http://192.168.246.12:8097/rest/zWPROD', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${credentials}` // Adiciona as credenciais
+          },
+          body: JSON.stringify(data),
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('A resposta não foi ok: ' + response.statusText);
+          }
+          return response.json(); // Processa a resposta como JSON
+        })
+        .then(data => {
+          console.log('Sucesso:', data);
+        })
+        .catch((error) => {
+          console.error('Erro:', error);
+        });
+      });
+    </script>
+
+</body>
+</html>

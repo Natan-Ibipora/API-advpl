@@ -1,0 +1,62 @@
+#include 'totvs.ch'
+#include 'tlpp-core.th'
+#include "topconn.ch"
+
+Namespace desenvolvimento.api.clientes
+
+@get(endpoint='/api/clientes/:cnpj', description='API para retorno de fornecedores')  
+User Function consultar_cliente() 
+   Local aArea   := GetArea() AS array
+   Local retorno   
+   Local lRet := .T. AS logical
+   Local jPath    AS json
+   Local cCnpj    AS  character
+   Local cQuery   AS  character
+   Local oJson    AS object
+   Local jCliente AS json
+
+   jPath := oRest:getPathParamsRequest()  
+   cCnpj:= cValToChar(jPath['cnpj'])
+
+   cQuery := " SELECT  "
+   cQuery += "   A1_COD, A1_LOJA, A1_NREDUZ"
+   cQuery += " FROM " + RetSQLNAME("SA1") + " AS SA1 "
+   cQuery += " WHERE"
+   cQuery += "   SA1.D_E_L_E_T_=' ' AND SA1.A1_CGC='" + cCnpj + "' "
+   cQuery += " ORDER BY A1_COD, A1_LOJA "
+   
+   conout(cQuery)
+
+   IF SELECT("TEMP")!=0
+        TEMP->(DbCloseArea())
+   ENDIF	
+   
+   TCQuery cQuery NEW ALIAS  "TEMP"
+   dbSelectArea("TEMP")
+
+   
+   
+   IF TEMP->(EOF())
+        oRest:setStatusCode(404)     
+        oJson:= JsonObject():New()  
+        oJson['mensagem'] :="Cliente nao encontrado !!!"
+        retorno := oJson
+   ELSE 
+       
+        oJson:= JsonObject():New()
+        oJson['clientes'] := {}
+        WHILE !TEMP->(EOF())
+
+                jCliente := {'codigo':TEMP->A1_COD, 'loja':TEMP->A1_LOJA, 'nome_fantasia':TEMP->A1_NREDUZ}
+                aAdd(oJson['clientes'], jCliente)
+
+            TEMP->(dbSkip())
+        ENDDO 
+        retorno := oJson
+    ENDIF
+
+   TEMP->(DbCloseArea())
+
+   oRest:setResponse(retorno)
+   RestArea(aArea)
+Return lRet
